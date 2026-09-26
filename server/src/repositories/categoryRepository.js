@@ -3,7 +3,7 @@ const prisma = require("../../prisma/db");
 function findAll() {
     return prisma.category.findMany({ orderBy: { name: "asc" } });
 }
-function findByID(id) {
+function findById(id) {
     return prisma.category.findUnique({ where: { id } });
 }
 function findByName(name) {
@@ -19,4 +19,4 @@ function remove(id) {
     return prisma.category.delete({ where: { id } });
 }
 
-module.exports = { findAll, findByID, findByName, countTransactions, create, remove }
+module.exports = { findAll, findById, findByName, countTransactions, create, remove }
