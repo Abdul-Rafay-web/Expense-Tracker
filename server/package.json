@@ -1,0 +1,27 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "papaparse": "^5.7.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "jest": "^30.5.2",
+    "prisma": "^6.19.3",
+    "supertest": "^7.3.0"
+  }
+}
