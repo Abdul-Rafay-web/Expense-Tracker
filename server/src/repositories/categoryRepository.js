@@ -10,7 +10,7 @@ function findByName(name) {
     return prisma.category.findUnique({ where: { name } })
 }
 function countTransactions(id) {
-    return prisma.category.count({ where: { categoryID: id } });
+    return prisma.transaction.count({ where: { categoryId: id } });
 }
 function create(data) {
     return prisma.category.create({ data });

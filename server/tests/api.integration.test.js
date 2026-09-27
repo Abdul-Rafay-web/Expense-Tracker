@@ -152,3 +152,21 @@ describe("Analytics API", () => {
         });
     });
 });
+describe("Delete category API", () => {
+    it("refuses to delete a category that has transactions", async () => {
+        const food = await createCategory("Food");
+        await createExpense(food.id, 50000, "2026-09-10");
+
+        const res = await request(app).delete(`/api/categories/${food.id}`);
+
+        expect(res.status).toBe(409);
+    });
+
+    it("deletes a category that is not used", async () => {
+        const food = await createCategory("Food");
+
+        const res = await request(app).delete(`/api/categories/${food.id}`);
+
+        expect(res.status).toBe(204);
+    });
+});
