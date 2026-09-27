@@ -50,7 +50,9 @@ model Category {
 model Transaction {
   id         Int             @id @default(autoincrement())
   type       TransactionType
-  amount     Int
+  amount         Int
+  currency       String          @default("PKR")
+  originalAmount Int?
   date       DateTime
   note       String?
   categoryId Int

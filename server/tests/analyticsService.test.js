@@ -71,10 +71,11 @@ describe("monthsBetween", () => {
 
 describe("getMonthlyTrend", () => {
     it("totals each month and keeps empty months as zero", async () => {
-        transactionRepository.findInRange.mockResolvedValue([
-            { type: "INCOME", amount: 1000, date: new Date("2026-07-05") },
-            { type: "EXPENSE", amount: 300, date: new Date("2026-07-20") },
-            { type: "EXPENSE", amount: 200, date: new Date("2026-09-01") },
+        transactionRepository.sumByTypeAndDate.mockResolvedValue([
+            { type: "INCOME", date: new Date("2026-07-05"), _sum: { amount: 1000 } },
+            { type: "EXPENSE", date: new Date("2026-07-20"), _sum: { amount: 100 } },
+            { type: "EXPENSE", date: new Date("2026-07-28"), _sum: { amount: 200 } },
+            { type: "EXPENSE", date: new Date("2026-09-01"), _sum: { amount: 200 } },
         ]);
 
         const result = await analyticsService.getMonthlyTrend(1, "2026-07", "2026-09");

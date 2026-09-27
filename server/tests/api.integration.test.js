@@ -279,3 +279,69 @@ describe("CSV import", () => {
         expect(list.body[0]).toMatchObject({ amount: 199900, category: { name: "Food" } });
     });
 });
+
+describe("Unknown API paths", () => {
+    it("answer with a JSON 404 instead of an HTML page", async () => {
+        const res = await agent.get("/api/does-not-exist");
+
+        expect(res.status).toBe(404);
+        expect(res.headers["content-type"]).toMatch(/application\/json/);
+        expect(res.body.error).toMatch(/does-not-exist/);
+    });
+});
+
+describe("Trend with many transactions on the same day", () => {
+    it("adds up every transaction, not just one per day", async () => {
+        const food = await createCategory("Food");
+        await createExpense(food.id, 1000, "2026-09-10");
+        await createExpense(food.id, 2000, "2026-09-10");
+        await createExpense(food.id, 3000, "2026-09-11");
+
+        const res = await agent.get("/api/analytics/trend?from=2026-09&to=2026-09");
+
+        expect(res.body).toEqual([{ month: "2026-09", totalIncome: 0, totalExpenses: 6000, balance: -6000 }]);
+    });
+});
+
+describe("Multi-currency transactions", () => {
+    it("stores the original amount and converts it to PKR for every total", async () => {
+        const freelance = await createCategory("Freelance");
+
+        const res = await agent
+            .post("/api/transactions")
+            .send({ type: "INCOME", amount: 10000, currency: "USD", date: "2026-09-12", categoryId: freelance.id });
+
+        expect(res.status).toBe(201);
+        expect(res.body).toMatchObject({ currency: "USD", originalAmount: 10000, amount: 2800000 });
+
+        const summary = await agent.get("/api/analytics/summary?month=2026-09");
+        expect(summary.body.totalIncome).toBe(2800000);
+    });
+
+    it("re-converts when only the currency of a transaction changes", async () => {
+        const freelance = await createCategory("Freelance");
+        const created = await agent
+            .post("/api/transactions")
+            .send({ type: "INCOME", amount: 10000, currency: "USD", date: "2026-09-12", categoryId: freelance.id });
+
+        const res = await agent.patch(`/api/transactions/${created.body.id}`).send({ currency: "EUR" });
+
+        expect(res.body).toMatchObject({ currency: "EUR", originalAmount: 10000, amount: 3050000 });
+    });
+
+    it("rejects an unsupported currency", async () => {
+        const food = await createCategory("Food");
+
+        const res = await agent
+            .post("/api/transactions")
+            .send({ type: "EXPENSE", amount: 100, currency: "XYZ", date: "2026-09-12", categoryId: food.id });
+
+        expect(res.status).toBe(400);
+    });
+
+    it("lists the supported currencies", async () => {
+        const res = await agent.get("/api/currencies");
+
+        expect(res.body.find((c) => c.code === "USD")).toMatchObject({ rate: 280 });
+    });
+});

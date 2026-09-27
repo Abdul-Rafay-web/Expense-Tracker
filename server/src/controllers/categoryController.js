@@ -1,5 +1,6 @@
-const categoryService = require("../services/categoryServices")
-const { createCategorySchema, idParamSchema } = require("../validators/categoryValidators")
+const categoryService = require("../services/categoryService")
+const { createCategorySchema } = require("../validators/categoryValidator");
+const { idParamSchema } = require("../validators/commonValidator");
 
 async function list(req, res) {
     const categories = await categoryService.listCategories(req.user.id);

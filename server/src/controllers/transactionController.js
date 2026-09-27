@@ -2,7 +2,7 @@ const transactionService = require("../services/transactionService");
 const csvService = require("../services/csvService");
 const { AppError } = require("../errors");
 const { createTransactionSchema, updateTransactionSchema, listTransactionsQuerySchema } = require("../validators/transactionValidator");
-const { idParamSchema } = require("../validators/categoryValidators");
+const { idParamSchema } = require("../validators/commonValidator");
 
 async function list(req, res) {
     const filters = listTransactionsQuerySchema.parse(req.query);

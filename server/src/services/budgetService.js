@@ -1,7 +1,7 @@
 const budgetRepository = require("../repositories/budgetRepository");
 const categoryRepository = require("../repositories/categoryRepository");
 const transactionRepository = require("../repositories/transactionRepository");
-const { monthRange } = require("./transactionService");
+const { monthRange } = require("../utils/dates");
 const { AppError } = require("../errors");
 
 const WARNING_THRESHOLD = 0.8;
@@ -27,7 +27,7 @@ async function setBudget(userId, { categoryId, month, limitAmount }) {
 async function getBudgetsWithStatus(userId, month) {
     const { start, end } = monthRange(month);
     const budgets = await budgetRepository.findByMonth(userId, month);
-    const totals = await transactionRepository.sumExpensesByCategory(userId, start, end);
+    const totals = await transactionRepository.sumByCategory(userId, "EXPENSE", start, end);
 
     const spentByCategory = new Map(
         totals.map((total) => [total.categoryId, total._sum.amount ?? 0])

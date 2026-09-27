@@ -1,6 +1,6 @@
 const transactionRepository = require("../repositories/transactionRepository");
 const categoryRepository = require("../repositories/categoryRepository");
-const { monthRange } = require("./transactionService");
+const { monthRange } = require("../utils/dates");
 
 function totalForType(totals, type) {
     const row = totals.find((total) => total.type === type);
@@ -59,18 +59,18 @@ async function getMonthlyTrend(userId, from, to) {
     const months = monthsBetween(from, to);
     const { start } = monthRange(from);
     const { end } = monthRange(to);
-    const transactions = await transactionRepository.findInRange(userId, start, end);
+    const totals = await transactionRepository.sumByTypeAndDate(userId, start, end);
 
     const trend = new Map(
         months.map((month) => [month, { month, totalIncome: 0, totalExpenses: 0, balance: 0 }])
     );
 
-    for (const transaction of transactions) {
-        const row = trend.get(transaction.date.toISOString().slice(0, 7));
-        if (transaction.type === "INCOME") {
-            row.totalIncome += transaction.amount;
+    for (const total of totals) {
+        const row = trend.get(total.date.toISOString().slice(0, 7));
+        if (total.type === "INCOME") {
+            row.totalIncome += total._sum.amount;
         } else {
-            row.totalExpenses += transaction.amount;
+            row.totalExpenses += total._sum.amount;
         }
     }
 

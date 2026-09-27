@@ -1,6 +1,6 @@
 const budgetService = require("../services/budgetService");
 const { setBudgetSchema, monthQuerySchema } = require("../validators/budgetValidator");
-const { idParamSchema } = require("../validators/categoryValidators");
+const { idParamSchema } = require("../validators/commonValidator");
 
 async function list(req, res) {
     const { month } = monthQuerySchema.parse(req.query)

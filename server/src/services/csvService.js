@@ -32,28 +32,31 @@ function describeIssues(error) {
 async function importTransactionsCsv(userId, csvText) {
     const parsed = Papa.parse(csvText, {
         header: true,
-        skipEmptyLines: true,
         transformHeader: (header) => header.trim().toLowerCase(),
     });
 
-    if (parsed.data.length === 0) {
+    const rows = parsed.data
+        .map((row, index) => ({ row, line: index + 2 }))
+        .filter(({ row }) => Object.values(row).some((value) => String(value ?? "").trim() !== ""));
+
+    if (rows.length === 0) {
         throw new AppError(400, "The CSV file has no data rows");
     }
-    if (parsed.data.length > MAX_IMPORT_ROWS) {
+    if (rows.length > MAX_IMPORT_ROWS) {
         throw new AppError(400, `A CSV file can have at most ${MAX_IMPORT_ROWS} rows`);
     }
 
     const validRows = [];
     const rowErrors = [];
 
-    parsed.data.forEach((row, index) => {
+    for (const { row, line } of rows) {
         const result = csvRowSchema.safeParse(row);
         if (result.success) {
             validRows.push(result.data);
         } else {
-            rowErrors.push({ line: index + 2, problem: describeIssues(result.error) });
+            rowErrors.push({ line, problem: describeIssues(result.error) });
         }
-    });
+    }
 
     if (rowErrors.length > 0) {
         throw new AppError(400, "The CSV file has invalid rows. Nothing was imported.", rowErrors);

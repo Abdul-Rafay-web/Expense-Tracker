@@ -1,7 +1,7 @@
 jest.mock("../src/repositories/categoryRepository");
 
 const categoryRepository = require("../src/repositories/categoryRepository");
-const categoryService = require("../src/services/categoryServices");
+const categoryService = require("../src/services/categoryService");
 
 beforeEach(() => {
     jest.resetAllMocks();

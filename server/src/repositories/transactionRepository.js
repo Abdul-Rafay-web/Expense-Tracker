@@ -23,18 +23,6 @@ function remove(id) {
     return prisma.transaction.delete({ where: { id } });
 }
 
-function sumExpensesByCategory(userId, start, end) {
-    return prisma.transaction.groupBy({
-        by: ["categoryId"],
-        where: {
-            userId,
-            type: "EXPENSE",
-            date: { gte: start, lt: end },
-        },
-        _sum: { amount: true }
-    })
-}
-
 function sumByType(userId, start, end) {
     return prisma.transaction.groupBy({
         by: ["type"],
@@ -61,10 +49,11 @@ function update(id, data) {
         include: { category: true },
     });
 }
-function findInRange(userId, start, end) {
-    return prisma.transaction.findMany({
+function sumByTypeAndDate(userId, start, end) {
+    return prisma.transaction.groupBy({
+        by: ["type", "date"],
         where: { userId, date: { gte: start, lt: end } },
-        select: { type: true, amount: true, date: true },
+        _sum: { amount: true },
     });
 }
 
@@ -97,4 +86,4 @@ function importWithCategories(userId, rows) {
     });
 }
 
-module.exports = { update, findMany, findById, create, remove, sumExpensesByCategory, sumByCategory, sumByType, findInRange, importWithCategories };
+module.exports = { update, findMany, findById, create, remove, sumByCategory, sumByType, sumByTypeAndDate, importWithCategories };
