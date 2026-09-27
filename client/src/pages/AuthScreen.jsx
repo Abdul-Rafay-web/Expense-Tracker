@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowRight, BellRing, Eye, EyeOff, FileSpreadsheet, LockKeyhole, Mail, ShieldCheck, UserRound, WifiOff } from "lucide-react";
+import { ArrowRight, BellRing, Eye, EyeOff, FileSpreadsheet, LockKeyhole, Mail, ShieldCheck, Sparkles, UserRound, WifiOff } from "lucide-react";
 import Logo from "../components/Logo";
 import Segmented from "../components/Segmented";
 import AnimatedNumber from "../components/AnimatedNumber";
 import { useToast } from "../components/Toasts";
 import { fieldErrorsFrom } from "../lib/api";
 import { formatMoney } from "../lib/format";
-import { useHealth, useLogin, useSignup } from "../lib/queries";
+import { useDemoLogin, useHealth, useLogin, useSignup } from "../lib/queries";
 import { firstName, passwordStrength } from "../lib/user";
 import { EASE_OUT } from "../lib/motion";
 
@@ -313,6 +313,31 @@ function SignupForm() {
     );
 }
 
+function DemoLogin() {
+    const toast = useToast();
+    const demo = useDemoLogin();
+
+    async function handleClick() {
+        try {
+            await demo.mutateAsync();
+            toast.success("You're exploring the demo account");
+        } catch (error) {
+            toast.error(error.message);
+        }
+    }
+
+    return (
+        <div className="demo-login">
+            <span className="demo-login__divider">or</span>
+            <motion.button type="button" className="btn btn--ghost btn--block demo-login__button" onClick={handleClick} disabled={demo.isPending} whileTap={{ scale: 0.98 }}>
+                <Sparkles size={16} />
+                <span>{demo.isPending ? "Opening the demo…" : "Continue with demo account"}</span>
+            </motion.button>
+            <p className="demo-login__note">Local development only — skips the password and opens the sample data.</p>
+        </div>
+    );
+}
+
 export default function AuthScreen() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -358,6 +383,8 @@ export default function AuthScreen() {
                     <AnimatePresence mode="wait" initial={false}>
                         {mode === "login" ? <LoginForm key="login" /> : <SignupForm key="signup" />}
                     </AnimatePresence>
+
+                    {import.meta.env.DEV && <DemoLogin />}
                 </motion.div>
                 <p className="auth__footnote">Your data lives only in your ExpenseMate database and is visible to your account alone.</p>
             </section>

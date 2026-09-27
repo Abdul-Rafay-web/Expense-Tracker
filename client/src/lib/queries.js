@@ -31,6 +31,11 @@ export function useSignup() {
     return useMutation({ mutationFn: api.auth.signup, onSuccess: (user) => resetUserData(queryClient, user) });
 }
 
+export function useDemoLogin() {
+    const queryClient = useQueryClient();
+    return useMutation({ mutationFn: api.auth.demo, onSuccess: (user) => resetUserData(queryClient, user) });
+}
+
 export function useLogout() {
     const queryClient = useQueryClient();
     return useMutation({ mutationFn: api.auth.logout, onSettled: () => resetUserData(queryClient, null) });

@@ -1,7 +1,8 @@
 const prisma = require("./db");
 const { hashPassword } = require("../src/utils/security");
+const { DEMO_EMAIL } = require("../src/utils/demo");
 
-const DEMO_USER = { name: "Demo User", email: "demo@expensemate.app", password: "demo-pass-2026" };
+const DEMO_USER = { name: "Demo User", email: DEMO_EMAIL, password: "demo-pass-2026" };
 
 const CATEGORY_NAMES = ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Salary", "Freelance"];
 

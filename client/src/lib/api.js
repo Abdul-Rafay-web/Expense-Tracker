@@ -67,6 +67,7 @@ export const api = {
         },
         login: (credentials) => request("/auth/login", { method: "POST", body: credentials }).then((data) => data.user),
         signup: (details) => request("/auth/signup", { method: "POST", body: details }).then((data) => data.user),
+        demo: () => request("/auth/demo", { method: "POST" }).then((data) => data.user),
         logout: () => request("/auth/logout", { method: "POST" }),
     },
     categories: {

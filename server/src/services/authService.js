@@ -2,6 +2,7 @@ const userRepository = require("../repositories/userRepository");
 const sessionRepository = require("../repositories/sessionRepository");
 const { hashPassword, verifyPassword, createSessionToken, hashSessionToken } = require("../utils/security");
 const { AppError } = require("../errors");
+const { DEMO_EMAIL } = require("../utils/demo");
 
 const SESSION_DAYS = 30;
 const DEFAULT_CATEGORIES = ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Health", "Salary", "Freelance"];
@@ -44,6 +45,15 @@ async function login({ email, password }) {
     return { user: publicUser(user), ...session };
 }
 
+async function loginDemo() {
+    const user = await userRepository.findByEmail(DEMO_EMAIL);
+    if (!user) {
+        throw new AppError(404, "The demo account doesn't exist yet. Run npm run db:reset in the server folder to create it.");
+    }
+    const session = await startSession(user.id);
+    return { user: publicUser(user), ...session };
+}
+
 async function logout(token) {
     if (token) {
         await sessionRepository.removeByTokenHash(hashSessionToken(token));
@@ -66,4 +76,4 @@ async function authenticate(token) {
     return publicUser(session.user);
 }
 
-module.exports = { signup, login, logout, authenticate, DEFAULT_CATEGORIES };
+module.exports = { signup, login, loginDemo, logout, authenticate, DEFAULT_CATEGORIES };

@@ -504,3 +504,38 @@
         padding: 24px 20px;
     }
 }
+
+.demo-login {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.demo-login__divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+.demo-login__divider::before,
+.demo-login__divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+}
+
+.demo-login__button svg {
+    color: var(--champagne);
+}
+
+.demo-login__note {
+    margin: 0;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-3);
+}

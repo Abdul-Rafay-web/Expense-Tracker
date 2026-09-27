@@ -2,6 +2,7 @@ const request = require("supertest");
 const app = require("../src/app");
 const { prisma, resetDatabase } = require("./helpers/db");
 const { signUpAgent } = require("./helpers/auth");
+const { DEMO_EMAIL } = require("../src/utils/demo");
 
 beforeEach(async () => {
     await resetDatabase();
@@ -97,6 +98,58 @@ describe("Log in and log out", () => {
         const me = await agent.get("/api/auth/me");
 
         expect(me.status).toBe(401);
+    });
+});
+
+describe("Demo login", () => {
+    const originalFlag = process.env.ENABLE_DEMO_LOGIN;
+    const originalEnv = process.env.NODE_ENV;
+
+    afterEach(() => {
+        process.env.ENABLE_DEMO_LOGIN = originalFlag;
+        process.env.NODE_ENV = originalEnv;
+    });
+
+    it("logs straight into the demo account when enabled locally", async () => {
+        await signUpAgent(app, { name: "Demo User", email: DEMO_EMAIL });
+        process.env.ENABLE_DEMO_LOGIN = "true";
+        const agent = request.agent(app);
+
+        const res = await agent.post("/api/auth/demo");
+
+        expect(res.status).toBe(200);
+        expect(res.body.user).toMatchObject({ email: DEMO_EMAIL });
+        const me = await agent.get("/api/auth/me");
+        expect(me.body.user.email).toBe(DEMO_EMAIL);
+    });
+
+    it("is unavailable when the flag is off", async () => {
+        await signUpAgent(app, { email: DEMO_EMAIL });
+        process.env.ENABLE_DEMO_LOGIN = "false";
+
+        const res = await request(app).post("/api/auth/demo");
+
+        expect(res.status).toBe(404);
+        expect(res.headers["set-cookie"]).toBeUndefined();
+    });
+
+    it("is always unavailable in production", async () => {
+        await signUpAgent(app, { email: DEMO_EMAIL });
+        process.env.ENABLE_DEMO_LOGIN = "true";
+        process.env.NODE_ENV = "production";
+
+        const res = await request(app).post("/api/auth/demo");
+
+        expect(res.status).toBe(404);
+    });
+
+    it("explains how to create the demo account when it is missing", async () => {
+        process.env.ENABLE_DEMO_LOGIN = "true";
+
+        const res = await request(app).post("/api/auth/demo");
+
+        expect(res.status).toBe(404);
+        expect(res.body.error).toMatch(/db:reset/);
     });
 });
 
