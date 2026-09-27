@@ -5,5 +5,6 @@ const router = express.Router();
 
 router.get("/summary", analyticsController.summary);
 router.get("/by-category", analyticsController.byCategory);
+router.get("/trend", analyticsController.trend);
 
 module.exports = router;

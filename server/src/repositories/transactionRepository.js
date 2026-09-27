@@ -58,4 +58,11 @@ function update(id, data) {
         include: { category: true },
     });
 }
-module.exports = { update, findMany, findById, create, remove, sumExpensesByCategory, sumByCategory, sumByType };
+function findInRange(start, end) {
+    return prisma.transaction.findMany({
+        where: { date: { gte: start, lt: end } },
+        select: { type: true, amount: true, date: true },
+    });
+}
+
+module.exports = { update, findMany, findById, create, remove, sumExpensesByCategory, sumByCategory, sumByType, findInRange };

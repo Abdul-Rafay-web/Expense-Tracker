@@ -170,3 +170,23 @@ describe("Delete category API", () => {
         expect(res.status).toBe(204);
     });
 });
+
+describe("Trend API", () => {
+    it("returns one row per month including empty months", async () => {
+        const food = await createCategory("Food");
+        await createExpense(food.id, 30000, "2026-07-15");
+        await createExpense(food.id, 20000, "2026-09-15");
+
+        const res = await request(app).get("/api/analytics/trend?from=2026-07&to=2026-09");
+
+        expect(res.status).toBe(200);
+        expect(res.body.map((row) => row.month)).toEqual(["2026-07", "2026-08", "2026-09"]);
+        expect(res.body[1]).toEqual({ month: "2026-08", totalIncome: 0, totalExpenses: 0, balance: 0 });
+    });
+
+    it("rejects a range where from is after to", async () => {
+        const res = await request(app).get("/api/analytics/trend?from=2026-09&to=2026-07");
+
+        expect(res.status).toBe(400);
+    });
+});

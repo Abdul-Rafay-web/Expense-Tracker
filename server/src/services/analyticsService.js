@@ -38,4 +38,47 @@ async function getCategoryBreakdown(month, type) {
     return breakdown.sort((a, b) => b.total - a.total);
 }
 
-module.exports = { getMonthlySummary, getCategoryBreakdown };
+function monthsBetween(from, to) {
+    const months = [];
+    let [year, month] = from.split("-").map(Number);
+    const [endYear, endMonth] = to.split("-").map(Number);
+
+    while (year < endYear || (year === endYear && month <= endMonth)) {
+        months.push(`${year}-${String(month).padStart(2, "0")}`);
+        month += 1;
+        if (month > 12) {
+            month = 1;
+            year += 1;
+        }
+    }
+
+    return months;
+}
+
+async function getMonthlyTrend(from, to) {
+    const months = monthsBetween(from, to);
+    const { start } = monthRange(from);
+    const { end } = monthRange(to);
+    const transactions = await transactionRepository.findInRange(start, end);
+
+    const trend = new Map(
+        months.map((month) => [month, { month, totalIncome: 0, totalExpenses: 0, balance: 0 }])
+    );
+
+    for (const transaction of transactions) {
+        const row = trend.get(transaction.date.toISOString().slice(0, 7));
+        if (transaction.type === "INCOME") {
+            row.totalIncome += transaction.amount;
+        } else {
+            row.totalExpenses += transaction.amount;
+        }
+    }
+
+    for (const row of trend.values()) {
+        row.balance = row.totalIncome - row.totalExpenses;
+    }
+
+    return [...trend.values()];
+}
+
+module.exports = { getMonthlySummary, getCategoryBreakdown, monthsBetween, getMonthlyTrend };

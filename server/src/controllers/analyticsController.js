@@ -1,5 +1,5 @@
 const analyticsService = require("../services/analyticsService");
-const { summaryQuerySchema, breakdownQuerySchema } = require("../validators/analyticsValidator");
+const { summaryQuerySchema, breakdownQuerySchema, trendQuerySchema } = require("../validators/analyticsValidator");
 
 async function summary(req, res) {
     const { month } = summaryQuerySchema.parse(req.query);
@@ -13,4 +13,10 @@ async function byCategory(req, res) {
     res.json(result);
 }
 
-module.exports = { summary, byCategory };
+async function trend(req, res) {
+    const { from, to } = trendQuerySchema.parse(req.query);
+    const result = await analyticsService.getMonthlyTrend(from, to);
+    res.json(result);
+}
+
+module.exports = { summary, byCategory, trend };

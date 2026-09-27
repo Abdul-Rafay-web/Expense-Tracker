@@ -58,3 +58,31 @@ describe("getCategoryBreakdown", () => {
         expect(result).toEqual([]);
     });
 });
+describe("monthsBetween", () => {
+    it("lists every month and crosses into the next year", () => {
+        expect(analyticsService.monthsBetween("2026-11", "2027-02"))
+            .toEqual(["2026-11", "2026-12", "2027-01", "2027-02"]);
+    });
+
+    it("returns a single month when from and to are the same", () => {
+        expect(analyticsService.monthsBetween("2026-09", "2026-09")).toEqual(["2026-09"]);
+    });
+});
+
+describe("getMonthlyTrend", () => {
+    it("totals each month and keeps empty months as zero", async () => {
+        transactionRepository.findInRange.mockResolvedValue([
+            { type: "INCOME", amount: 1000, date: new Date("2026-07-05") },
+            { type: "EXPENSE", amount: 300, date: new Date("2026-07-20") },
+            { type: "EXPENSE", amount: 200, date: new Date("2026-09-01") },
+        ]);
+
+        const result = await analyticsService.getMonthlyTrend("2026-07", "2026-09");
+
+        expect(result).toEqual([
+            { month: "2026-07", totalIncome: 1000, totalExpenses: 300, balance: 700 },
+            { month: "2026-08", totalIncome: 0, totalExpenses: 0, balance: 0 },
+            { month: "2026-09", totalIncome: 0, totalExpenses: 200, balance: -200 },
+        ]);
+    });
+});
