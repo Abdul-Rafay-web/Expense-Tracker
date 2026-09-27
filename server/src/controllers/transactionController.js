@@ -1,5 +1,5 @@
 const transactionService = require("../services/transactionService");
-const { createTransactionSchema, listTransactionsQuerySchema } = require("../validators/transactionValidator");
+const { createTransactionSchema, updateTransactionSchema, listTransactionsQuerySchema } = require("../validators/transactionValidator");
 const { idParamSchema } = require("../validators/categoryValidators");
 
 async function list(req, res) {
@@ -18,4 +18,11 @@ async function remove(req, res) {
     await transactionService.deleteTransaction(id);
     res.status(204).end();
 }
-module.exports = { list, create, remove };
+
+async function update(req, res) {
+    const { id } = idParamSchema.parse(req.params);
+    const data = updateTransactionSchema.parse(req.body);
+    const transaction = await transactionService.updateTransaction(id, data);
+    res.json(transaction);
+}
+module.exports = { list, create, remove, update };

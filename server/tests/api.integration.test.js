@@ -105,5 +105,50 @@ describe("Analytics API", () => {
 
         expect(res.status).toBe(200);
         expect(res.body).toEqual({ month: "2026-09", totalIncome: 100000, totalExpenses: 40000, balance: 60000 });
+    }); describe("Update transaction API", () => {
+        it("updates only the fields that are sent", async () => {
+            const food = await createCategory("Food");
+            const transaction = await createExpense(food.id, 50000, "2026-09-10");
+
+            const res = await request(app)
+                .patch(`/api/transactions/${transaction.id}`)
+                .send({ amount: 75000, note: "Dinner with friends" });
+
+            expect(res.status).toBe(200);
+            expect(res.body).toMatchObject({
+                id: transaction.id,
+                amount: 75000,
+                note: "Dinner with friends",
+                type: "EXPENSE",
+                category: { name: "Food" },
+            });
+        });
+
+        it("returns 404 for a transaction that does not exist", async () => {
+            const res = await request(app).patch("/api/transactions/999").send({ amount: 100 });
+
+            expect(res.status).toBe(404);
+            expect(res.body).toHaveProperty("error");
+        });
+
+        it("returns 404 when moving to a category that does not exist", async () => {
+            const food = await createCategory("Food");
+            const transaction = await createExpense(food.id, 50000, "2026-09-10");
+
+            const res = await request(app)
+                .patch(`/api/transactions/${transaction.id}`)
+                .send({ categoryId: 999 });
+
+            expect(res.status).toBe(404);
+        });
+
+        it("returns 400 when the body is empty", async () => {
+            const food = await createCategory("Food");
+            const transaction = await createExpense(food.id, 50000, "2026-09-10");
+
+            const res = await request(app).patch(`/api/transactions/${transaction.id}`).send({});
+
+            expect(res.status).toBe(400);
+        });
     });
 });

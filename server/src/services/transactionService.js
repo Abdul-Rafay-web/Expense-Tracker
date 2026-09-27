@@ -29,5 +29,19 @@ async function deleteTransaction(id) {
     }
     await transactionRepository.remove(id);
 }
+async function updateTransaction(id, data) {
+    const transaction = await transactionRepository.findById(id);
+    if (!transaction) {
+        throw new AppError(404, "Transaction doesnt exist");
+    }
 
-module.exports = { monthRange, listTransactions, createTransaction, deleteTransaction };
+    if (data.categoryId !== undefined) {
+        const category = await categoryRepository.findById(data.categoryId);
+        if (!category) {
+            throw new AppError(404, "Category doesn't exist");
+        }
+    }
+
+    return transactionRepository.update(id, data);
+}
+module.exports = { updateTransaction, monthRange, listTransactions, createTransaction, deleteTransaction };
