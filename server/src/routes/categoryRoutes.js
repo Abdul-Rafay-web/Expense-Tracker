@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.get("/", categoryController.list);
 router.post("/", categoryController.create);
-router.delete("/", categoryController.remove);
+router.delete("/:id", categoryController.remove);
 
 module.exports = router;
