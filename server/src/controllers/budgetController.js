@@ -14,7 +14,7 @@ async function alerts(req, res) {
     res.json(alerts);
 }
 async function set(req, res) {
-    const data = setBudgetSchema.parse(req.Body)
+    const data = setBudgetSchema.parse(req.body)
     const budget = await budgetService.setBudget(data);
     res.json(budget);
 }

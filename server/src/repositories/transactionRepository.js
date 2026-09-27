@@ -26,7 +26,7 @@ function sumExpensesByCategory(start, end) {
     return prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
-            type: "Expense",
+            type: "EXPENSE",
             date: { gte: start, lt: end },
         },
         _sum: { amount: true }
