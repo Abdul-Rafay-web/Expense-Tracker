@@ -4,9 +4,11 @@ import Modal from "../components/Modal";
 import Segmented from "../components/Segmented";
 import { useToast } from "../components/Toasts";
 import { useMonth } from "./MonthContext";
+import FieldError, { withError } from "../components/FieldError";
 import { fieldErrorsFrom } from "../lib/api";
-import { defaultDateForMonth, formatMoney, isValidRupees, paisaToInput, rupeesToPaisa } from "../lib/format";
-import { useCategories, useCreateTransaction, useUpdateTransaction } from "../lib/queries";
+import { formatMoney } from "../lib/format";
+import { convertedPreview, initialValues, toPayload, validateTransaction } from "../lib/transactionForm";
+import { useCategories, useCreateTransaction, useCurrencies, useUpdateTransaction } from "../lib/queries";
 
 const TransactionModalContext = createContext(() => {});
 
@@ -19,69 +21,43 @@ function TransactionForm({ transaction, onDone }) {
     const { month } = useMonth();
     const toast = useToast();
     const { data: categories = [], isLoading: loadingCategories } = useCategories();
+    const { data: currencies = [] } = useCurrencies();
     const createTransaction = useCreateTransaction();
     const updateTransaction = useUpdateTransaction();
-
-    const [type, setType] = useState(transaction?.type ?? "EXPENSE");
-    const [amount, setAmount] = useState(transaction ? paisaToInput(transaction.amount) : "");
-    const [categoryId, setCategoryId] = useState(transaction ? String(transaction.categoryId) : "");
-    const [date, setDate] = useState(transaction ? transaction.date.slice(0, 10) : defaultDateForMonth(month));
-    const [note, setNote] = useState(transaction?.note ?? "");
+    const [values, setValues] = useState(() => initialValues(transaction, month));
     const [errors, setErrors] = useState({});
 
     const pending = createTransaction.isPending || updateTransaction.isPending;
+    const preview = convertedPreview(values, currencies);
+    const currencyOptions = currencies.length > 0 ? currencies : [{ code: values.currency }];
 
-    function edit(setter, field) {
-        return (event) => {
-            setter(event.target.value);
-            setErrors((current) => (current[field] || current.form ? { ...current, [field]: undefined, form: undefined } : current));
+    function set(field) {
+        return (input) => {
+            const value = input?.target ? input.target.value : input;
+            setValues((current) => ({ ...current, [field]: value }));
+            setErrors((current) => ({ ...current, [field]: undefined, form: undefined }));
         };
     }
 
-    function validate() {
-        const found = {};
-        if (!isValidRupees(amount)) {
-            found.amount = "Enter an amount like 1500 or 1500.50";
+    async function save(payload) {
+        if (transaction) {
+            await updateTransaction.mutateAsync({ id: transaction.id, data: payload });
+            toast.success("Transaction updated");
+            return;
         }
-        if (!categoryId) {
-            found.categoryId = "Choose a category";
-        }
-        if (!date) {
-            found.date = "Choose a date";
-        }
-        if (note.trim().length > 200) {
-            found.note = "Keep the note under 200 characters";
-        }
-        return found;
+        const saved = await createTransaction.mutateAsync(payload);
+        toast.success(`${values.type === "INCOME" ? "Income" : "Expense"} of ${formatMoney(saved.amount)} saved`);
     }
 
     async function handleSubmit(event) {
         event.preventDefault();
-        const found = validate();
+        const found = validateTransaction(values);
         setErrors(found);
         if (Object.keys(found).length > 0) {
             return;
         }
-
-        const payload = {
-            type,
-            amount: rupeesToPaisa(amount),
-            categoryId: Number(categoryId),
-            date,
-            note: note.trim(),
-        };
-
         try {
-            if (transaction) {
-                await updateTransaction.mutateAsync({ id: transaction.id, data: payload });
-                toast.success("Transaction updated");
-            } else {
-                if (!payload.note) {
-                    delete payload.note;
-                }
-                await createTransaction.mutateAsync(payload);
-                toast.success(`${type === "INCOME" ? "Income" : "Expense"} of ${formatMoney(payload.amount)} saved`);
-            }
+            await save(toPayload(values, !transaction));
             onDone();
         } catch (error) {
             setErrors(fieldErrorsFrom(error));
@@ -101,34 +77,40 @@ function TransactionForm({ transaction, onDone }) {
 
     return (
         <form className="modal__body form" onSubmit={handleSubmit} noValidate>
-            <Segmented name="tx-type" label="Transaction type" options={TYPE_OPTIONS} value={type} onChange={setType} />
+            <Segmented name="tx-type" label="Transaction type" options={TYPE_OPTIONS} value={values.type} onChange={set("type")} />
 
             <label className="field">
                 <span className="field__label">Amount</span>
-                <div className={`amount-input amount-input--${type === "INCOME" ? "income" : "expense"}${errors.amount ? " has-error" : ""}`}>
-                    <span className="amount-input__prefix">Rs</span>
+                <div className={withError(`amount-input amount-input--${values.type.toLowerCase()}`, errors.amount)}>
+                    <select className="amount-input__currency" value={values.currency} onChange={set("currency")} aria-label="Currency">
+                        {currencyOptions.map((currency) => (
+                            <option key={currency.code} value={currency.code}>
+                                {currency.code}
+                            </option>
+                        ))}
+                    </select>
                     <input
                         autoFocus
                         inputMode="decimal"
                         placeholder="0"
-                        value={amount}
-                        onChange={edit(setAmount, "amount")}
+                        value={values.amount}
+                        onChange={set("amount")}
                         aria-invalid={Boolean(errors.amount)}
-                        aria-describedby={errors.amount ? "amount-error" : undefined}
+                        aria-describedby="amount-error"
                     />
                 </div>
-                {errors.amount && <span id="amount-error" className="field__error">{errors.amount}</span>}
+                <FieldError id="amount-error" message={errors.amount} />
+                {preview && (
+                    <span className="field__hint">
+                        ≈ {formatMoney(preview.amount)} at 1 {values.currency} = Rs {preview.rate}
+                    </span>
+                )}
             </label>
 
             <div className="form__row">
                 <label className="field">
                     <span className="field__label">Category</span>
-                    <select
-                        className={`input${errors.categoryId ? " has-error" : ""}`}
-                        value={categoryId}
-                        onChange={edit(setCategoryId, "categoryId")}
-                        aria-invalid={Boolean(errors.categoryId)}
-                    >
+                    <select className={withError("input", errors.categoryId)} value={values.categoryId} onChange={set("categoryId")} aria-invalid={Boolean(errors.categoryId)}>
                         <option value="">Choose…</option>
                         {categories.map((category) => (
                             <option key={category.id} value={category.id}>
@@ -136,19 +118,13 @@ function TransactionForm({ transaction, onDone }) {
                             </option>
                         ))}
                     </select>
-                    {errors.categoryId && <span className="field__error">{errors.categoryId}</span>}
+                    <FieldError message={errors.categoryId} />
                 </label>
 
                 <label className="field">
                     <span className="field__label">Date</span>
-                    <input
-                        type="date"
-                        className={`input${errors.date ? " has-error" : ""}`}
-                        value={date}
-                        onChange={edit(setDate, "date")}
-                        aria-invalid={Boolean(errors.date)}
-                    />
-                    {errors.date && <span className="field__error">{errors.date}</span>}
+                    <input type="date" className={withError("input", errors.date)} value={values.date} onChange={set("date")} aria-invalid={Boolean(errors.date)} />
+                    <FieldError message={errors.date} />
                 </label>
             </div>
 
@@ -156,14 +132,8 @@ function TransactionForm({ transaction, onDone }) {
                 <span className="field__label">
                     Note <span className="field__optional">optional</span>
                 </span>
-                <input
-                    className={`input${errors.note ? " has-error" : ""}`}
-                    placeholder="Groceries, fuel, salary…"
-                    maxLength={200}
-                    value={note}
-                    onChange={edit(setNote, "note")}
-                />
-                {errors.note && <span className="field__error">{errors.note}</span>}
+                <input className={withError("input", errors.note)} placeholder="Groceries, fuel, salary…" maxLength={200} value={values.note} onChange={set("note")} />
+                <FieldError message={errors.note} />
             </label>
 
             {errors.form && (

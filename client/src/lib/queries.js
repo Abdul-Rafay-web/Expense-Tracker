@@ -51,6 +51,10 @@ export function useHealth() {
     });
 }
 
+export function useCurrencies() {
+    return useQuery({ queryKey: ["currencies"], queryFn: api.currencies, staleTime: Infinity });
+}
+
 export function useCategories() {
     return useQuery({ queryKey: ["categories"], queryFn: api.categories.list });
 }

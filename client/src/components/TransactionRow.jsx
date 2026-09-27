@@ -1,21 +1,13 @@
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Pencil, Trash2 } from "lucide-react";
 import CategoryAvatar from "./CategoryAvatar";
-import { formatMoney, formatShortDate } from "../lib/format";
+import { formatMoney, formatOriginal, formatShortDate } from "../lib/format";
+import { useConfirm } from "../hooks/useConfirm";
 import { EASE_OUT } from "../lib/motion";
 
 export default function TransactionRow({ transaction, onEdit, onDelete, deleting = false, showDate = false }) {
-    const [confirming, setConfirming] = useState(false);
+    const [confirming, setConfirming] = useConfirm();
     const isIncome = transaction.type === "INCOME";
-
-    useEffect(() => {
-        if (!confirming) {
-            return undefined;
-        }
-        const timer = setTimeout(() => setConfirming(false), 3000);
-        return () => clearTimeout(timer);
-    }, [confirming]);
 
     function handleDelete() {
         if (confirming) {
@@ -39,8 +31,7 @@ export default function TransactionRow({ transaction, onEdit, onDelete, deleting
             <div className="tx-row__main">
                 <span className="tx-row__title">{transaction.note || transaction.category.name}</span>
                 <span className="tx-row__meta">
-                    {transaction.category.name}
-                    {showDate && <> · {formatShortDate(transaction.date)}</>}
+                    {[transaction.category.name, formatOriginal(transaction), showDate && formatShortDate(transaction.date)].filter(Boolean).join(" · ")}
                 </span>
             </div>
             <span className={`tx-row__amount ${isIncome ? "is-income" : "is-expense"}`}>

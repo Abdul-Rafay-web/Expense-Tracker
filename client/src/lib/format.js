@@ -87,6 +87,13 @@ export function formatShortDate(isoDate) {
     return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(isoDate));
 }
 
+export function formatOriginal(transaction) {
+    if (!transaction.currency || transaction.currency === "PKR" || transaction.originalAmount == null) {
+        return "";
+    }
+    return `${transaction.currency} ${(transaction.originalAmount / 100).toFixed(2)}`;
+}
+
 export function plural(count, one, many) {
     return `${count} ${count === 1 ? one : many}`;
 }

@@ -53,6 +53,7 @@ async function request(path, { method = "GET", body, contentType } = {}) {
 
 export const api = {
     health: () => request("/health"),
+    currencies: () => request("/currencies"),
     auth: {
         me: async () => {
             try {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useConfirm } from "../hooks/useConfirm";
 import { AnimatePresence, motion } from "motion/react";
 import { PiggyBank, Trash2, TriangleAlert } from "lucide-react";
 import Page from "../components/Page";
@@ -98,17 +99,9 @@ function BudgetForm({ month, budgets }) {
 function BudgetCard({ budget, index }) {
     const toast = useToast();
     const deleteBudget = useDeleteBudget();
-    const [confirming, setConfirming] = useState(false);
+    const [confirming, setConfirming] = useConfirm();
     const status = STATUS[budget.status];
     const fill = Math.min(budget.percentUsed, 100) / 100;
-
-    useEffect(() => {
-        if (!confirming) {
-            return undefined;
-        }
-        const timer = setTimeout(() => setConfirming(false), 3000);
-        return () => clearTimeout(timer);
-    }, [confirming]);
 
     async function handleDelete() {
         if (!confirming) {

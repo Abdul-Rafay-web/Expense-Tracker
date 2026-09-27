@@ -1654,6 +1654,28 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
     border-color: rgba(255, 93, 125, 0.6);
 }
 
+.amount-input__currency {
+    appearance: none;
+    border: none;
+    background: none;
+    padding: 0 4px 0 0;
+    font-family: var(--font-display);
+    font-size: 24px;
+    color: var(--text-3);
+    cursor: pointer;
+}
+
+.amount-input__currency:hover {
+    color: var(--champagne);
+}
+
+.amount-input__currency option {
+    background: var(--bg-raised);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 14px;
+}
+
 .amount-input__prefix {
     font-family: var(--font-display);
     font-size: 26px;

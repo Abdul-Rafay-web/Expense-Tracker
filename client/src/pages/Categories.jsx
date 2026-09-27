@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useConfirm } from "../hooks/useConfirm";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, Tags, Trash2 } from "lucide-react";
 import Page from "../components/Page";
@@ -15,15 +16,7 @@ import { EASE_OUT } from "../lib/motion";
 function CategoryTile({ category, spent, earned, index }) {
     const toast = useToast();
     const deleteCategory = useDeleteCategory();
-    const [confirming, setConfirming] = useState(false);
-
-    useEffect(() => {
-        if (!confirming) {
-            return undefined;
-        }
-        const timer = setTimeout(() => setConfirming(false), 3000);
-        return () => clearTimeout(timer);
-    }, [confirming]);
+    const [confirming, setConfirming] = useConfirm();
 
     async function handleDelete() {
         if (!confirming) {
