@@ -38,7 +38,7 @@ describe("getBudgetsWithStatus", () => {
             { categoryId: 1, _sum: { amount: 170000 } },
         ]);
 
-        const result = await budgetService.getBudgetsWithStatus("2026-09");
+        const result = await budgetService.getBudgetsWithStatus(1, "2026-09");
 
         expect(result[0]).toMatchObject({ spent: 170000, remaining: 30000, percentUsed: 85, status: "WARNING" });
         expect(result[1]).toMatchObject({ spent: 0, remaining: 50000, percentUsed: 0, status: "OK" });

@@ -11,8 +11,8 @@ function paisaToRupees(paisa) {
     return (paisa / 100).toFixed(2);
 }
 
-async function exportTransactionsCsv(filters) {
-    const transactions = await transactionService.listTransactions(filters);
+async function exportTransactionsCsv(userId, filters) {
+    const transactions = await transactionService.listTransactions(userId, filters);
 
     const rows = transactions.map((transaction) => [
         transaction.date.toISOString().slice(0, 10),
@@ -29,7 +29,7 @@ function describeIssues(error) {
     return error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; ");
 }
 
-async function importTransactionsCsv(csvText) {
+async function importTransactionsCsv(userId, csvText) {
     const parsed = Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
@@ -59,7 +59,7 @@ async function importTransactionsCsv(csvText) {
         throw new AppError(400, "The CSV file has invalid rows. Nothing was imported.", rowErrors);
     }
 
-    return transactionRepository.importWithCategories(validRows);
+    return transactionRepository.importWithCategories(userId, validRows);
 }
 
 module.exports = { exportTransactionsCsv, importTransactionsCsv };

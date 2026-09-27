@@ -1,4 +1,7 @@
 const prisma = require("./db");
+const { hashPassword } = require("../src/utils/security");
+
+const DEMO_USER = { name: "Demo User", email: "demo@expensemate.app", password: "demo-pass-2026" };
 
 const CATEGORY_NAMES = ["Food", "Transport", "Bills", "Shopping", "Entertainment", "Salary", "Freelance"];
 
@@ -36,10 +39,20 @@ async function main() {
     await prisma.budget.deleteMany();
     await prisma.transaction.deleteMany();
     await prisma.category.deleteMany();
+    await prisma.session.deleteMany();
+    await prisma.user.deleteMany();
+
+    const user = await prisma.user.create({
+        data: {
+            name: DEMO_USER.name,
+            email: DEMO_USER.email,
+            passwordHash: await hashPassword(DEMO_USER.password),
+        },
+    });
 
     const categoryIds = {};
     for (const name of CATEGORY_NAMES) {
-        const category = await prisma.category.create({ data: { name } });
+        const category = await prisma.category.create({ data: { name, userId: user.id } });
         categoryIds[name] = category.id;
     }
 
@@ -51,6 +64,7 @@ async function main() {
                 date: new Date(t.date),
                 note: t.note,
                 categoryId: categoryIds[t.category],
+                userId: user.id,
             },
         });
     }
@@ -61,12 +75,13 @@ async function main() {
                 month: b.month,
                 limitAmount: b.limitAmount,
                 categoryId: categoryIds[b.category],
+                userId: user.id,
             },
         });
     }
 
     console.log(
-        `Seeded ${CATEGORY_NAMES.length} categories, ${TRANSACTIONS.length} transactions, ${BUDGETS.length} budgets`
+        `Seeded ${DEMO_USER.email} with ${CATEGORY_NAMES.length} categories, ${TRANSACTIONS.length} transactions, ${BUDGETS.length} budgets`
     );
 }
 

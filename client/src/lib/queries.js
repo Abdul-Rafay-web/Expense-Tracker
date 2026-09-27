@@ -7,6 +7,35 @@ function refreshMoney(queryClient) {
     );
 }
 
+function resetUserData(queryClient, user) {
+    queryClient.removeQueries({ predicate: (query) => !["me", "health"].includes(query.queryKey[0]) });
+    queryClient.setQueryData(["me"], user);
+}
+
+export function useMe() {
+    return useQuery({
+        queryKey: ["me"],
+        queryFn: api.auth.me,
+        staleTime: 5 * 60 * 1000,
+        retry: false,
+    });
+}
+
+export function useLogin() {
+    const queryClient = useQueryClient();
+    return useMutation({ mutationFn: api.auth.login, onSuccess: (user) => resetUserData(queryClient, user) });
+}
+
+export function useSignup() {
+    const queryClient = useQueryClient();
+    return useMutation({ mutationFn: api.auth.signup, onSuccess: (user) => resetUserData(queryClient, user) });
+}
+
+export function useLogout() {
+    const queryClient = useQueryClient();
+    return useMutation({ mutationFn: api.auth.logout, onSettled: () => resetUserData(queryClient, null) });
+}
+
 export function useHealth() {
     return useQuery({
         queryKey: ["health"],

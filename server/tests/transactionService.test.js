@@ -13,7 +13,7 @@ beforeEach(() => {
 describe("createTransaction", () => {
     it("throws 404 when category doesnt exist", async () => {
         categoryRepository.findById.mockResolvedValue(null);
-        await expect(transactionService.createTransaction({ categoryId: 99 }))
+        await expect(transactionService.createTransaction(1, { categoryId: 99 }))
             .rejects.toMatchObject({ statusCode: 404 });
         expect(transactionRepository.create).not.toHaveBeenCalled();
     });
@@ -32,7 +32,7 @@ describe("updateTransaction", () => {
         transactionRepository.findById.mockResolvedValue({ id: 1, categoryId: 1 });
         categoryRepository.findById.mockResolvedValue(null);
 
-        await expect(transactionService.updateTransaction(1, { categoryId: 999 }))
+        await expect(transactionService.updateTransaction(1, 1, { categoryId: 999 }))
             .rejects.toMatchObject({ statusCode: 404 });
 
         expect(transactionRepository.update).not.toHaveBeenCalled();

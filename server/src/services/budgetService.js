@@ -16,18 +16,18 @@ function getBudgetStatus(spent, limit) {
     return "OK";
 }
 
-async function setBudget({ categoryId, month, limitAmount }) {
-    const category = await categoryRepository.findById(categoryId);
+async function setBudget(userId, { categoryId, month, limitAmount }) {
+    const category = await categoryRepository.findById(userId, categoryId);
     if (!category) {
         throw new AppError(404, "Category not found");
     }
-    return budgetRepository.upsert({ categoryId, month, limitAmount });
+    return budgetRepository.upsert({ userId, categoryId, month, limitAmount });
 }
 
-async function getBudgetsWithStatus(month) {
+async function getBudgetsWithStatus(userId, month) {
     const { start, end } = monthRange(month);
-    const budgets = await budgetRepository.findByMonth(month);
-    const totals = await transactionRepository.sumExpensesByCategory(start, end);
+    const budgets = await budgetRepository.findByMonth(userId, month);
+    const totals = await transactionRepository.sumExpensesByCategory(userId, start, end);
 
     const spentByCategory = new Map(
         totals.map((total) => [total.categoryId, total._sum.amount ?? 0])
@@ -48,13 +48,13 @@ async function getBudgetsWithStatus(month) {
     });
 }
 
-async function getBudgetAlerts(month) {
-    const budgets = await getBudgetsWithStatus(month);
+async function getBudgetAlerts(userId, month) {
+    const budgets = await getBudgetsWithStatus(userId, month);
     return budgets.filter((budget) => budget.status !== "OK");
 }
 
-async function deleteBudget(id) {
-    const budget = await budgetRepository.findById(id);
+async function deleteBudget(userId, id) {
+    const budget = await budgetRepository.findById(userId, id);
     if (!budget) {
         throw new AppError(404, "Budget not found");
     }

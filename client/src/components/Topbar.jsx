@@ -2,8 +2,11 @@ import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus } from "lucide-react";
 import MonthSwitcher from "./MonthSwitcher";
+import AccountMenu from "./AccountMenu";
 import { useTransactionModal } from "../context/TransactionModalContext";
 import { EASE_OUT } from "../lib/motion";
+import { useMe } from "../lib/queries";
+import { firstName, greeting } from "../lib/user";
 
 const TITLES = {
     "/": { eyebrow: "Overview", lead: "The shape of", accent: "your month" },
@@ -15,7 +18,9 @@ const TITLES = {
 export default function Topbar() {
     const { pathname } = useLocation();
     const openTransaction = useTransactionModal();
+    const { data: user } = useMe();
     const title = TITLES[pathname] ?? TITLES["/"];
+    const eyebrow = pathname === "/" && user ? `${greeting()}, ${firstName(user)}` : title.eyebrow;
 
     return (
         <header className="topbar">
@@ -28,7 +33,7 @@ export default function Topbar() {
                     exit={{ opacity: 0, y: -8, filter: "blur(6px)", transition: { duration: 0.2 } }}
                     transition={{ duration: 0.7, ease: EASE_OUT }}
                 >
-                    <p className="eyebrow">{title.eyebrow}</p>
+                    <p className="eyebrow">{eyebrow}</p>
                     <h1 className="topbar__title">
                         {title.lead} <em>{title.accent}</em>
                     </h1>
@@ -47,6 +52,7 @@ export default function Topbar() {
                     <Plus size={17} strokeWidth={2.2} />
                     <span>New transaction</span>
                 </motion.button>
+                <AccountMenu />
             </div>
         </header>
     );

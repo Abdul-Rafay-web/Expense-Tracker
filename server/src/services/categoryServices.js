@@ -1,18 +1,18 @@
 const categoryRepository = require("../repositories/categoryRepository")
 const { AppError } = require("../errors");
-async function listCategories(name) {
-    return categoryRepository.findAll();
+async function listCategories(userId) {
+    return categoryRepository.findAll(userId);
 }
-async function createCategory(name) {
-    const existing = await categoryRepository.findByName(name)
+async function createCategory(userId, name) {
+    const existing = await categoryRepository.findByName(userId, name)
     if (existing) {
         throw new AppError(409, `Category ${name} already exists`)
     }
-    return categoryRepository.create({ name });
+    return categoryRepository.create({ userId, name });
 }
 
-async function deleteCategory(id) {
-    const category = await categoryRepository.findById(id);
+async function deleteCategory(userId, id) {
+    const category = await categoryRepository.findById(userId, id);
     if (!category) {
         throw new AppError(404, "Category not found");
     }

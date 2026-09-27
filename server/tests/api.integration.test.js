@@ -1,9 +1,13 @@
-const request = require("supertest");
 const app = require("../src/app");
-const { prisma, resetDatabase } = require("./helpers/db");
+const { prisma, resetDatabase, clearFinanceData } = require("./helpers/db");
+const { signUpAgent } = require("./helpers/auth");
+
+let agent;
 
 beforeEach(async () => {
     await resetDatabase();
+    agent = await signUpAgent(app);
+    await clearFinanceData();
 });
 
 afterAll(async () => {
@@ -11,23 +15,23 @@ afterAll(async () => {
 });
 
 async function createCategory(name) {
-    const res = await request(app).post("/api/categories").send({ name });
+    const res = await agent.post("/api/categories").send({ name });
     return res.body;
 }
 
 async function createExpense(categoryId, amount, date) {
-    const res = await request(app).post("/api/transactions").send({ type: "EXPENSE", amount, date, categoryId });
+    const res = await agent.post("/api/transactions").send({ type: "EXPENSE", amount, date, categoryId });
     return res.body;
 }
 
 describe("Categories API", () => {
     it("creates a category and lists it", async () => {
-        const createRes = await request(app).post("/api/categories").send({ name: "Food" });
+        const createRes = await agent.post("/api/categories").send({ name: "Food" });
 
         expect(createRes.status).toBe(201);
         expect(createRes.body).toMatchObject({ name: "Food" });
 
-        const listRes = await request(app).get("/api/categories");
+        const listRes = await agent.get("/api/categories");
 
         expect(listRes.status).toBe(200);
         expect(listRes.body).toHaveLength(1);
@@ -36,7 +40,7 @@ describe("Categories API", () => {
     it("rejects a duplicate name with 409", async () => {
         await createCategory("Food");
 
-        const res = await request(app).post("/api/categories").send({ name: "Food" });
+        const res = await agent.post("/api/categories").send({ name: "Food" });
 
         expect(res.status).toBe(409);
     });
@@ -48,7 +52,7 @@ describe("Transactions API", () => {
         await createExpense(food.id, 50000, "2026-09-10");
         await createExpense(food.id, 30000, "2026-08-10");
 
-        const res = await request(app).get("/api/transactions?month=2026-09");
+        const res = await agent.get("/api/transactions?month=2026-09");
 
         expect(res.status).toBe(200);
         expect(res.body).toHaveLength(1);
@@ -58,7 +62,7 @@ describe("Transactions API", () => {
     it("rejects a negative amount with 400", async () => {
         const food = await createCategory("Food");
 
-        const res = await request(app)
+        const res = await agent
             .post("/api/transactions")
             .send({ type: "EXPENSE", amount: -500, date: "2026-09-10", categoryId: food.id });
 
@@ -69,10 +73,10 @@ describe("Transactions API", () => {
         const food = await createCategory("Food");
         const transaction = await createExpense(food.id, 50000, "2026-09-10");
 
-        const res = await request(app).delete(`/api/transactions/${transaction.id}`);
+        const res = await agent.delete(`/api/transactions/${transaction.id}`);
 
         expect(res.status).toBe(204);
-        const listRes = await request(app).get("/api/transactions");
+        const listRes = await agent.get("/api/transactions");
         expect(listRes.body).toHaveLength(0);
     });
 });
@@ -80,12 +84,12 @@ describe("Transactions API", () => {
 describe("Budgets API", () => {
     it("reports WARNING when 85% of the budget is spent", async () => {
         const food = await createCategory("Food");
-        await request(app)
+        await agent
             .put("/api/budgets")
             .send({ categoryId: food.id, month: "2026-09", limitAmount: 100000 });
         await createExpense(food.id, 85000, "2026-09-10");
 
-        const res = await request(app).get("/api/budgets?month=2026-09");
+        const res = await agent.get("/api/budgets?month=2026-09");
 
         expect(res.status).toBe(200);
         expect(res.body[0]).toMatchObject({ spent: 85000, percentUsed: 85, status: "WARNING" });
@@ -97,11 +101,11 @@ describe("Analytics API", () => {
         const food = await createCategory("Food");
         const salary = await createCategory("Salary");
         await createExpense(food.id, 40000, "2026-09-10");
-        await request(app)
+        await agent
             .post("/api/transactions")
             .send({ type: "INCOME", amount: 100000, date: "2026-09-01", categoryId: salary.id });
 
-        const res = await request(app).get("/api/analytics/summary?month=2026-09");
+        const res = await agent.get("/api/analytics/summary?month=2026-09");
 
         expect(res.status).toBe(200);
         expect(res.body).toEqual({ month: "2026-09", totalIncome: 100000, totalExpenses: 40000, balance: 60000 });
@@ -110,7 +114,7 @@ describe("Analytics API", () => {
             const food = await createCategory("Food");
             const transaction = await createExpense(food.id, 50000, "2026-09-10");
 
-            const res = await request(app)
+            const res = await agent
                 .patch(`/api/transactions/${transaction.id}`)
                 .send({ amount: 75000, note: "Dinner with friends" });
 
@@ -125,7 +129,7 @@ describe("Analytics API", () => {
         });
 
         it("returns 404 for a transaction that does not exist", async () => {
-            const res = await request(app).patch("/api/transactions/999").send({ amount: 100 });
+            const res = await agent.patch("/api/transactions/999").send({ amount: 100 });
 
             expect(res.status).toBe(404);
             expect(res.body).toHaveProperty("error");
@@ -135,7 +139,7 @@ describe("Analytics API", () => {
             const food = await createCategory("Food");
             const transaction = await createExpense(food.id, 50000, "2026-09-10");
 
-            const res = await request(app)
+            const res = await agent
                 .patch(`/api/transactions/${transaction.id}`)
                 .send({ categoryId: 999 });
 
@@ -146,7 +150,7 @@ describe("Analytics API", () => {
             const food = await createCategory("Food");
             const transaction = await createExpense(food.id, 50000, "2026-09-10");
 
-            const res = await request(app).patch(`/api/transactions/${transaction.id}`).send({});
+            const res = await agent.patch(`/api/transactions/${transaction.id}`).send({});
 
             expect(res.status).toBe(400);
         });
@@ -157,7 +161,7 @@ describe("Delete category API", () => {
         const food = await createCategory("Food");
         await createExpense(food.id, 50000, "2026-09-10");
 
-        const res = await request(app).delete(`/api/categories/${food.id}`);
+        const res = await agent.delete(`/api/categories/${food.id}`);
 
         expect(res.status).toBe(409);
     });
@@ -165,7 +169,7 @@ describe("Delete category API", () => {
     it("deletes a category that is not used", async () => {
         const food = await createCategory("Food");
 
-        const res = await request(app).delete(`/api/categories/${food.id}`);
+        const res = await agent.delete(`/api/categories/${food.id}`);
 
         expect(res.status).toBe(204);
     });
@@ -177,7 +181,7 @@ describe("Trend API", () => {
         await createExpense(food.id, 30000, "2026-07-15");
         await createExpense(food.id, 20000, "2026-09-15");
 
-        const res = await request(app).get("/api/analytics/trend?from=2026-07&to=2026-09");
+        const res = await agent.get("/api/analytics/trend?from=2026-07&to=2026-09");
 
         expect(res.status).toBe(200);
         expect(res.body.map((row) => row.month)).toEqual(["2026-07", "2026-08", "2026-09"]);
@@ -185,7 +189,7 @@ describe("Trend API", () => {
     });
 
     it("rejects a range where from is after to", async () => {
-        const res = await request(app).get("/api/analytics/trend?from=2026-09&to=2026-07");
+        const res = await agent.get("/api/analytics/trend?from=2026-09&to=2026-07");
 
         expect(res.status).toBe(400);
     });
@@ -194,11 +198,11 @@ describe("Trend API", () => {
 describe("CSV export", () => {
     it("downloads transactions as CSV with amounts in rupees", async () => {
         const food = await createCategory("Food");
-        await request(app)
+        await agent
             .post("/api/transactions")
             .send({ type: "EXPENSE", amount: 150050, date: "2026-09-10", note: "Groceries, weekly", categoryId: food.id });
 
-        const res = await request(app).get("/api/transactions/export?month=2026-09");
+        const res = await agent.get("/api/transactions/export?month=2026-09");
 
         expect(res.status).toBe(200);
         expect(res.headers["content-type"]).toMatch(/text\/csv/);
@@ -217,7 +221,7 @@ describe("CSV import", () => {
             "2026-09-03,EXPENSE,Food,1500.50,",
         ].join("\n");
 
-        const res = await request(app)
+        const res = await agent
             .post("/api/transactions/import")
             .set("Content-Type", "text/csv")
             .send(csv);
@@ -225,7 +229,7 @@ describe("CSV import", () => {
         expect(res.status).toBe(201);
         expect(res.body).toEqual({ imported: 2, categoriesCreated: 1 });
 
-        const list = await request(app).get("/api/transactions?month=2026-09");
+        const list = await agent.get("/api/transactions?month=2026-09");
         expect(list.body).toHaveLength(2);
         expect(list.body.find((t) => t.type === "EXPENSE")).toMatchObject({
             amount: 150050,
@@ -241,7 +245,7 @@ describe("CSV import", () => {
             "2026-09-03,SPENDING,Food,-20,",
         ].join("\n");
 
-        const res = await request(app)
+        const res = await agent
             .post("/api/transactions/import")
             .set("Content-Type", "text/csv")
             .send(csv);
@@ -249,12 +253,12 @@ describe("CSV import", () => {
         expect(res.status).toBe(400);
         expect(res.body.details.map((d) => d.line)).toEqual([3, 4]);
 
-        const list = await request(app).get("/api/transactions");
+        const list = await agent.get("/api/transactions");
         expect(list.body).toHaveLength(0);
     });
 
     it("rejects a request that is not CSV text", async () => {
-        const res = await request(app).post("/api/transactions/import").send({ hello: "world" });
+        const res = await agent.post("/api/transactions/import").send({ hello: "world" });
 
         expect(res.status).toBe(400);
     });
@@ -262,16 +266,16 @@ describe("CSV import", () => {
     it("exports and re-imports the same data", async () => {
         const food = await createCategory("Food");
         await createExpense(food.id, 199900, "2026-09-10");
-        const exported = await request(app).get("/api/transactions/export");
+        const exported = await agent.get("/api/transactions/export");
 
-        await resetDatabase();
-        const res = await request(app)
+        await clearFinanceData();
+        const res = await agent
             .post("/api/transactions/import")
             .set("Content-Type", "text/csv")
             .send(exported.text);
 
         expect(res.status).toBe(201);
-        const list = await request(app).get("/api/transactions");
+        const list = await agent.get("/api/transactions");
         expect(list.body[0]).toMatchObject({ amount: 199900, category: { name: "Food" } });
     });
 });

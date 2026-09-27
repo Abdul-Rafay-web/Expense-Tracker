@@ -1,9 +1,10 @@
 const prisma = require("../../prisma/db");
 
 
-function findMany({ type, start, end }) {
+function findMany({ userId, type, start, end }) {
     return prisma.transaction.findMany({
         where: {
+            userId,
             type,
             date: start ? { gte: start, lt: end } : undefined,
         },
@@ -12,8 +13,8 @@ function findMany({ type, start, end }) {
     });
 }
 
-function findById(id) {
-    return prisma.transaction.findUnique({ where: { id } });
+function findById(userId, id) {
+    return prisma.transaction.findFirst({ where: { id, userId } });
 }
 function create(data) {
     return prisma.transaction.create({ data, include: { category: true } });
@@ -22,10 +23,11 @@ function remove(id) {
     return prisma.transaction.delete({ where: { id } });
 }
 
-function sumExpensesByCategory(start, end) {
+function sumExpensesByCategory(userId, start, end) {
     return prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
+            userId,
             type: "EXPENSE",
             date: { gte: start, lt: end },
         },
@@ -33,18 +35,19 @@ function sumExpensesByCategory(start, end) {
     })
 }
 
-function sumByType(start, end) {
+function sumByType(userId, start, end) {
     return prisma.transaction.groupBy({
         by: ["type"],
-        where: { date: { gte: start, lt: end } },
+        where: { userId, date: { gte: start, lt: end } },
         _sum: { amount: true }
     })
 }
 
-function sumByCategory(type, start, end) {
+function sumByCategory(userId, type, start, end) {
     return prisma.transaction.groupBy({
         by: ["categoryId"],
         where: {
+            userId,
             type,
             date: { gte: start, lt: end },
         },
@@ -58,22 +61,22 @@ function update(id, data) {
         include: { category: true },
     });
 }
-function findInRange(start, end) {
+function findInRange(userId, start, end) {
     return prisma.transaction.findMany({
-        where: { date: { gte: start, lt: end } },
+        where: { userId, date: { gte: start, lt: end } },
         select: { type: true, amount: true, date: true },
     });
 }
 
-function importWithCategories(rows) {
+function importWithCategories(userId, rows) {
     return prisma.$transaction(async (tx) => {
         const categoryIds = new Map();
         let categoriesCreated = 0;
 
         for (const name of new Set(rows.map((row) => row.category))) {
-            let category = await tx.category.findUnique({ where: { name } });
+            let category = await tx.category.findUnique({ where: { userId_name: { userId, name } } });
             if (!category) {
-                category = await tx.category.create({ data: { name } });
+                category = await tx.category.create({ data: { userId, name } });
                 categoriesCreated += 1;
             }
             categoryIds.set(name, category.id);
@@ -86,6 +89,7 @@ function importWithCategories(rows) {
                 date: row.date,
                 note: row.note,
                 categoryId: categoryIds.get(row.category),
+                userId,
             })),
         });
 

@@ -53,6 +53,22 @@ async function request(path, { method = "GET", body, contentType } = {}) {
 
 export const api = {
     health: () => request("/health"),
+    auth: {
+        me: async () => {
+            try {
+                const data = await request("/auth/me");
+                return data.user;
+            } catch (error) {
+                if (error.status === 401) {
+                    return null;
+                }
+                throw error;
+            }
+        },
+        login: (credentials) => request("/auth/login", { method: "POST", body: credentials }).then((data) => data.user),
+        signup: (details) => request("/auth/signup", { method: "POST", body: details }).then((data) => data.user),
+        logout: () => request("/auth/logout", { method: "POST" }),
+    },
     categories: {
         list: () => request("/categories"),
         create: (name) => request("/categories", { method: "POST", body: { name } }),

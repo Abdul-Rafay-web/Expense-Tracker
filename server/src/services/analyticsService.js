@@ -7,9 +7,9 @@ function totalForType(totals, type) {
     return row ? row._sum.amount : 0;
 }
 
-async function getMonthlySummary(month) {
+async function getMonthlySummary(userId, month) {
     const { start, end } = monthRange(month);
-    const totals = await transactionRepository.sumByType(start, end)
+    const totals = await transactionRepository.sumByType(userId, start, end)
     const totalIncome = totalForType(totals, "INCOME");
     const totalExpenses = totalForType(totals, "EXPENSE");
     return {
@@ -20,10 +20,10 @@ async function getMonthlySummary(month) {
     };
 }
 
-async function getCategoryBreakdown(month, type) {
+async function getCategoryBreakdown(userId, month, type) {
     const { start, end } = monthRange(month);
-    const totals = await transactionRepository.sumByCategory(type, start, end);
-    const categories = await categoryRepository.findAll();
+    const totals = await transactionRepository.sumByCategory(userId, type, start, end);
+    const categories = await categoryRepository.findAll(userId);
 
     const nameById = new Map(categories.map((category) => [category.id, category.name]));
     const grandTotal = totals.reduce((sum, row) => sum + row._sum.amount, 0);
@@ -55,11 +55,11 @@ function monthsBetween(from, to) {
     return months;
 }
 
-async function getMonthlyTrend(from, to) {
+async function getMonthlyTrend(userId, from, to) {
     const months = monthsBetween(from, to);
     const { start } = monthRange(from);
     const { end } = monthRange(to);
-    const transactions = await transactionRepository.findInRange(start, end);
+    const transactions = await transactionRepository.findInRange(userId, start, end);
 
     const trend = new Map(
         months.map((month) => [month, { month, totalIncome: 0, totalExpenses: 0, balance: 0 }])

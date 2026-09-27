@@ -16,7 +16,7 @@ describe("getMonthlySummary", () => {
             { type: "EXPENSE", _sum: { amount: 4000 } },
         ]);
 
-        const result = await analyticsService.getMonthlySummary("2026-09");
+        const result = await analyticsService.getMonthlySummary(1, "2026-09");
 
         expect(result).toEqual({ month: "2026-09", totalIncome: 10000, totalExpenses: 4000, balance: 6000 });
     });
@@ -24,7 +24,7 @@ describe("getMonthlySummary", () => {
     it("returns zeros for a month with no transactions", async () => {
         transactionRepository.sumByType.mockResolvedValue([]);
 
-        const result = await analyticsService.getMonthlySummary("2025-01");
+        const result = await analyticsService.getMonthlySummary(1, "2025-01");
 
         expect(result).toEqual({ month: "2025-01", totalIncome: 0, totalExpenses: 0, balance: 0 });
     });
@@ -41,7 +41,7 @@ describe("getCategoryBreakdown", () => {
             { id: 2, name: "Bills" },
         ]);
 
-        const result = await analyticsService.getCategoryBreakdown("2026-09", "EXPENSE");
+        const result = await analyticsService.getCategoryBreakdown(1, "2026-09", "EXPENSE");
 
         expect(result).toEqual([
             { categoryId: 2, categoryName: "Bills", total: 7500, percentage: 75 },
@@ -53,7 +53,7 @@ describe("getCategoryBreakdown", () => {
         transactionRepository.sumByCategory.mockResolvedValue([]);
         categoryRepository.findAll.mockResolvedValue([{ id: 1, name: "Food" }]);
 
-        const result = await analyticsService.getCategoryBreakdown("2026-09", "EXPENSE");
+        const result = await analyticsService.getCategoryBreakdown(1, "2026-09", "EXPENSE");
 
         expect(result).toEqual([]);
     });
@@ -77,7 +77,7 @@ describe("getMonthlyTrend", () => {
             { type: "EXPENSE", amount: 200, date: new Date("2026-09-01") },
         ]);
 
-        const result = await analyticsService.getMonthlyTrend("2026-07", "2026-09");
+        const result = await analyticsService.getMonthlyTrend(1, "2026-07", "2026-09");
 
         expect(result).toEqual([
             { month: "2026-07", totalIncome: 1000, totalExpenses: 300, balance: 700 },

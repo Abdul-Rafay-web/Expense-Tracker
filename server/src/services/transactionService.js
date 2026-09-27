@@ -9,34 +9,34 @@ function monthRange(month) {
     return { start, end };
 }
 
-async function listTransactions({ month, type }) {
+async function listTransactions(userId, { month, type }) {
     const range = month ? monthRange(month) : {};
-    return transactionRepository.findMany({ type, ...range });
+    return transactionRepository.findMany({ userId, type, ...range });
 
 }
 
-async function createTransaction(data) {
-    const category = await categoryRepository.findById(data.categoryId);
+async function createTransaction(userId, data) {
+    const category = await categoryRepository.findById(userId, data.categoryId);
     if (!category) {
         throw new AppError(404, "Category doesn't exist");
     }
-    return transactionRepository.create(data);
+    return transactionRepository.create({ ...data, userId });
 }
-async function deleteTransaction(id) {
-    const transaction = await transactionRepository.findById(id)
+async function deleteTransaction(userId, id) {
+    const transaction = await transactionRepository.findById(userId, id)
     if (!transaction) {
         throw new AppError(404, "Transaction doesnt exist")
     }
     await transactionRepository.remove(id);
 }
-async function updateTransaction(id, data) {
-    const transaction = await transactionRepository.findById(id);
+async function updateTransaction(userId, id, data) {
+    const transaction = await transactionRepository.findById(userId, id);
     if (!transaction) {
         throw new AppError(404, "Transaction doesnt exist");
     }
 
     if (data.categoryId !== undefined) {
-        const category = await categoryRepository.findById(data.categoryId);
+        const category = await categoryRepository.findById(userId, data.categoryId);
         if (!category) {
             throw new AppError(404, "Category doesn't exist");
         }

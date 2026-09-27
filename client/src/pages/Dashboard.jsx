@@ -13,13 +13,15 @@ import { useTransactionModal } from "../context/TransactionModalContext";
 import { formatMoney, monthLabel, monthName, shiftMonth } from "../lib/format";
 import { useBreakdown, useBudgets, useSummary, useTransactions, useTrend } from "../lib/queries";
 import { EASE_OUT } from "../lib/motion";
+import { useMe } from "../lib/queries";
+import { firstName } from "../lib/user";
 
 const STATUS_LABEL = { OK: "On track", WARNING: "Close to limit", EXCEEDED: "Over budget" };
 
-function heroCaption(summary, month) {
+function heroCaption(summary, month, name) {
     const { totalIncome, totalExpenses, balance } = summary;
     if (totalIncome === 0 && totalExpenses === 0) {
-        return `Nothing recorded for ${monthName(month)} yet. Add a transaction and watch this page come alive.`;
+        return `Welcome${name ? `, ${name}` : ""}. Nothing recorded for ${monthName(month)} yet — add your first transaction and watch this page come alive.`;
     }
     if (totalIncome === 0) {
         return `You spent ${formatMoney(totalExpenses)} in ${monthName(month)} with no income recorded.`;
@@ -32,6 +34,7 @@ function heroCaption(summary, month) {
 
 function Hero({ month }) {
     const { data: summary, isLoading, isError, error } = useSummary(month);
+    const { data: user } = useMe();
 
     if (isError) {
         return (
@@ -58,16 +61,18 @@ function Hero({ month }) {
         <Card className="hero span-7">
             <div className="hero__top">
                 <p className="eyebrow">Net balance · {monthLabel(month)}</p>
-                <span className={`hero__badge ${balance >= 0 ? "is-positive" : "is-negative"}`}>
-                    {balance >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                    {balance >= 0 ? "Surplus" : "Deficit"}
-                </span>
+                {(totalIncome > 0 || totalExpenses > 0) && (
+                    <span className={`hero__badge ${balance >= 0 ? "is-positive" : "is-negative"}`}>
+                        {balance >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                        {balance >= 0 ? "Surplus" : "Deficit"}
+                    </span>
+                )}
             </div>
 
             <h2 className={`hero__value ${balance < 0 ? "is-negative" : ""}`}>
                 <AnimatedNumber value={balance} format={formatMoney} duration={1.8} />
             </h2>
-            <p className="hero__caption">{heroCaption(summary, month)}</p>
+            <p className="hero__caption">{heroCaption(summary, month, firstName(user))}</p>
 
             <div className="flow" aria-hidden="true">
                 <motion.div

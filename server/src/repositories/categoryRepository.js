@@ -1,13 +1,13 @@
 const prisma = require("../../prisma/db");
 
-function findAll() {
-    return prisma.category.findMany({ orderBy: { name: "asc" } });
+function findAll(userId) {
+    return prisma.category.findMany({ where: { userId }, orderBy: { name: "asc" } });
 }
-function findById(id) {
-    return prisma.category.findUnique({ where: { id } });
+function findById(userId, id) {
+    return prisma.category.findFirst({ where: { id, userId } });
 }
-function findByName(name) {
-    return prisma.category.findUnique({ where: { name } })
+function findByName(userId, name) {
+    return prisma.category.findUnique({ where: { userId_name: { userId, name } } });
 }
 function countTransactions(id) {
     return prisma.transaction.count({ where: { categoryId: id } });

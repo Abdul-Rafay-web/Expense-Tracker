@@ -12,12 +12,39 @@ enum TransactionType {
   EXPENSE
 }
 
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  categories   Category[]
+  transactions Transaction[]
+  budgets      Budget[]
+  sessions     Session[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
 model Category {
   id           Int           @id @default(autoincrement())
-  name         String        @unique
+  name         String
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime      @default(now())
   transactions Transaction[]
   budgets      Budget[]
+
+  @@unique([userId, name])
 }
 
 model Transaction {
@@ -28,9 +55,11 @@ model Transaction {
   note       String?
   categoryId Int
   category   Category        @relation(fields: [categoryId], references: [id])
+  userId     Int
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt  DateTime        @default(now())
 
-  @@index([date])
+  @@index([userId, date])
 }
 
 model Budget {
@@ -39,6 +68,9 @@ model Budget {
   limitAmount Int
   categoryId  Int
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([categoryId, month])
+  @@index([userId, month])
 }
