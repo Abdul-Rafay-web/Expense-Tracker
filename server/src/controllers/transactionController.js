@@ -1,5 +1,5 @@
-const transactionService = require("../services/transactionServices");
-const { createTransactionSchema, listTransactionsQuerySchema } = require("../validators/transactionValidators");
+const transactionService = require("../services/transactionService");
+const { createTransactionSchema, listTransactionsQuerySchema } = require("../validators/transactionValidator");
 const { idParamSchema } = require("../validators/categoryValidators");
 
 async function list(req, res) {

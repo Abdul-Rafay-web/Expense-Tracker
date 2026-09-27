@@ -5,6 +5,6 @@ const router = express.Router();
 
 router.get("/", transactionController.list);
 router.post("/", transactionController.create);
-router.delete("/", transactionController.delete);
+router.delete("/", transactionController.remove);
 
-modules.export = router;
+module.exports = router;

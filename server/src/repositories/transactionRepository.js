@@ -1,4 +1,5 @@
-const prisma = require("../db");
+const prisma = require("../../prisma/db");
+
 
 function findMany({ type, start, end }) {
     return prisma.transaction.findMany({
@@ -21,4 +22,15 @@ function remove(id) {
     return prisma.transaction.delete({ where: { id } });
 }
 
-module.exports = { findMany, findById, create, remove };
+function sumExpensesByCategory(start, end) {
+    return prisma.transaction.groupBy({
+        by: ["categoryId"],
+        where: {
+            type: "Expense",
+            date: { gte: start, lt: end },
+        },
+        _sum: { amount: true }
+    })
+}
+
+module.exports = { findMany, findById, create, remove, sumExpensesByCategory };

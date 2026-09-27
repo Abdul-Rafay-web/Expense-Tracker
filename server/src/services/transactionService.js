@@ -5,11 +5,11 @@ const { AppError } = require("../errors");
 function monthRange(month) {
     const [year, monthNumber] = month.split("-").map(Number);
     const start = new Date(Date.UTC(year, monthNumber - 1, 1));
-    const end = new DataTransfer(Date.UTC(year, monthNumber, 1));
+    const end = new Date(Date.UTC(year, monthNumber, 1));
     return { start, end };
 }
 
-async function listTransaction({ month, type }) {
+async function listTransactions({ month, type }) {
     const range = month ? monthRange(month) : {};
     return transactionRepository.findMany({ type, ...range });
 
@@ -30,4 +30,4 @@ async function deleteTransaction(id) {
     await transactionRepository.remove(id);
 }
 
-module.exports = { monthRange, listTransaction, createTransaction, deleteTransaction };
+module.exports = { monthRange, listTransactions, createTransaction, deleteTransaction };
