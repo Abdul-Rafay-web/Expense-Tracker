@@ -33,4 +33,23 @@ function sumExpensesByCategory(start, end) {
     })
 }
 
-module.exports = { findMany, findById, create, remove, sumExpensesByCategory };
+function sumByType(start, end) {
+    return prisma.transaction.groupBy({
+        by: ["type"],
+        where: { date: { gte: start, lt: end } },
+        _sum: { amount: true }
+    })
+}
+
+function sumByCategory(type, start, end) {
+    return prisma.transaction.groupBy({
+        by: ["categoryId"],
+        where: {
+            type,
+            date: { gte: start, lt: end },
+        },
+        _sum: { amount: true },
+    });
+}
+
+module.exports = { findMany, findById, create, remove, sumExpensesByCategory, sumByCategory, sumByType };
