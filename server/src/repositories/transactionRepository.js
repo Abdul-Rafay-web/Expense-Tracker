@@ -65,4 +65,32 @@ function findInRange(start, end) {
     });
 }
 
-module.exports = { update, findMany, findById, create, remove, sumExpensesByCategory, sumByCategory, sumByType, findInRange };
+function importWithCategories(rows) {
+    return prisma.$transaction(async (tx) => {
+        const categoryIds = new Map();
+        let categoriesCreated = 0;
+
+        for (const name of new Set(rows.map((row) => row.category))) {
+            let category = await tx.category.findUnique({ where: { name } });
+            if (!category) {
+                category = await tx.category.create({ data: { name } });
+                categoriesCreated += 1;
+            }
+            categoryIds.set(name, category.id);
+        }
+
+        const created = await tx.transaction.createMany({
+            data: rows.map((row) => ({
+                type: row.type,
+                amount: row.amount,
+                date: row.date,
+                note: row.note,
+                categoryId: categoryIds.get(row.category),
+            })),
+        });
+
+        return { imported: created.count, categoriesCreated };
+    });
+}
+
+module.exports = { update, findMany, findById, create, remove, sumExpensesByCategory, sumByCategory, sumByType, findInRange, importWithCategories };

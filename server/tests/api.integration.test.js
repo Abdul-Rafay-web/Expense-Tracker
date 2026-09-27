@@ -190,3 +190,88 @@ describe("Trend API", () => {
         expect(res.status).toBe(400);
     });
 });
+
+describe("CSV export", () => {
+    it("downloads transactions as CSV with amounts in rupees", async () => {
+        const food = await createCategory("Food");
+        await request(app)
+            .post("/api/transactions")
+            .send({ type: "EXPENSE", amount: 150050, date: "2026-09-10", note: "Groceries, weekly", categoryId: food.id });
+
+        const res = await request(app).get("/api/transactions/export?month=2026-09");
+
+        expect(res.status).toBe(200);
+        expect(res.headers["content-type"]).toMatch(/text\/csv/);
+        expect(res.text).toBe(
+            'date,type,category,amount,note\r\n2026-09-10,EXPENSE,Food,1500.50,"Groceries, weekly"'
+        );
+    });
+});
+
+describe("CSV import", () => {
+    it("imports valid rows and creates missing categories", async () => {
+        await createCategory("Food");
+        const csv = [
+            "date,type,category,amount,note",
+            "2026-09-01,income,Salary,150000,September salary",
+            "2026-09-03,EXPENSE,Food,1500.50,",
+        ].join("\n");
+
+        const res = await request(app)
+            .post("/api/transactions/import")
+            .set("Content-Type", "text/csv")
+            .send(csv);
+
+        expect(res.status).toBe(201);
+        expect(res.body).toEqual({ imported: 2, categoriesCreated: 1 });
+
+        const list = await request(app).get("/api/transactions?month=2026-09");
+        expect(list.body).toHaveLength(2);
+        expect(list.body.find((t) => t.type === "EXPENSE")).toMatchObject({
+            amount: 150050,
+            category: { name: "Food" },
+        });
+    });
+
+    it("rejects the whole file when any row is invalid", async () => {
+        const csv = [
+            "date,type,category,amount,note",
+            "2026-09-01,EXPENSE,Food,500,",
+            "2026-02-31,EXPENSE,Food,500,",
+            "2026-09-03,SPENDING,Food,-20,",
+        ].join("\n");
+
+        const res = await request(app)
+            .post("/api/transactions/import")
+            .set("Content-Type", "text/csv")
+            .send(csv);
+
+        expect(res.status).toBe(400);
+        expect(res.body.details.map((d) => d.line)).toEqual([3, 4]);
+
+        const list = await request(app).get("/api/transactions");
+        expect(list.body).toHaveLength(0);
+    });
+
+    it("rejects a request that is not CSV text", async () => {
+        const res = await request(app).post("/api/transactions/import").send({ hello: "world" });
+
+        expect(res.status).toBe(400);
+    });
+
+    it("exports and re-imports the same data", async () => {
+        const food = await createCategory("Food");
+        await createExpense(food.id, 199900, "2026-09-10");
+        const exported = await request(app).get("/api/transactions/export");
+
+        await resetDatabase();
+        const res = await request(app)
+            .post("/api/transactions/import")
+            .set("Content-Type", "text/csv")
+            .send(exported.text);
+
+        expect(res.status).toBe(201);
+        const list = await request(app).get("/api/transactions");
+        expect(list.body[0]).toMatchObject({ amount: 199900, category: { name: "Food" } });
+    });
+});
