@@ -29,7 +29,7 @@ async function request(path, { method = "GET", body, contentType } = {}) {
 
     let response;
     try {
-        response = await fetch(`${BASE_URL}${path}`, { method, headers, body: payload });
+        response = await fetch(`${BASE_URL}${path}`, { method, headers, body: payload, credentials: "include" });
     } catch {
         throw new ApiError(0, "Can't reach the ExpenseMate server. Start it with npm run dev inside the server folder.");
     }
