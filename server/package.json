@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --env-file-if-exists=.env --watch src/server.js",
     "start": "node --env-file-if-exists=.env src/server.js",
+    "build": "prisma generate",
     "test": "jest --runInBand",
     "seed": "node prisma/seed.js",
     "db:reset": "prisma migrate reset --force && node prisma/seed.js"
