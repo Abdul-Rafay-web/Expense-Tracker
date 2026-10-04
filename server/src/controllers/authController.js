@@ -7,8 +7,8 @@ const { AppError } = require("../errors");
 function cookieOptions() {
     return {
         httpOnly: true,
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
+        sameSite: "none",
+        secure: true,
         path: "/",
     };
 }
